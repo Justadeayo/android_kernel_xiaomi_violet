@@ -951,7 +951,12 @@ asmlinkage long sys_statx(int dfd, const char __user *path, unsigned flags,
 asmlinkage long sys_pidfd_send_signal(int pidfd, int sig,
 				       siginfo_t __user *info,
 				       unsigned int flags);
-asmlinkage long sys_move_mount(int from_dfd, const char __user *from_path,
-			       int to_dfd, const char __user *to_path,
-			       unsigned int ms_flags);
+
+extern long do_sys_ftruncate(unsigned int fd, loff_t length, int small);
+
+static inline long ksys_ftruncate(unsigned int fd, unsigned long length)
+{
+	return do_sys_ftruncate(fd, length, 1);
+}
+
 #endif
