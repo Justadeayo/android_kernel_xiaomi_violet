@@ -80,7 +80,7 @@
 #define SCHED_FEAT_RT_PUSH_IPI 0
 #endif
 
-#define SCHED_FEAT_RT_RUNTIME_SHARE 1
+#define SCHED_FEAT_RT_RUNTIME_SHARE 0
 #define SCHED_FEAT_LB_MIN 0
 #define SCHED_FEAT_ATTACH_AGE_LOAD 1
 
@@ -119,7 +119,7 @@
  *   OFF: Use whichever of target or backup saves most.
  */
 #define SCHED_FEAT_EAS_PREFER_IDLE 0
-#define SCHED_FEAT_FIND_BEST_TARGET 1
+#define SCHED_FEAT_FIND_BEST_TARGET 0
 #define SCHED_FEAT_FBT_STRICT_ORDER 0
 
 /*
