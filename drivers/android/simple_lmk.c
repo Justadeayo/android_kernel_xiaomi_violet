@@ -466,10 +466,13 @@ void simple_lmk_mm_freed(struct mm_struct *mm)
 	read_unlock(&mm_free_lock);
 }
 
+static unsigned short slmk_vmpressure __read_mostly = 95;
+module_param(slmk_vmpressure, short, 0644);
+
 static int simple_lmk_vmpressure_cb(struct notifier_block *nb,
 				    unsigned long pressure, void *data)
 {
-	if (pressure >= 95) {
+	if (pressure >= slmk_vmpressure) {
 		atomic_set(&needs_reclaim, 1);
 		smp_mb__after_atomic();
 		if (waitqueue_active(&oom_waitq))
