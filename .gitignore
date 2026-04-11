@@ -132,9 +132,7 @@ Android.bp
 
 # Ignore build stuff
 AnyKernel3/
-build.log
 build.sh
 clang/
 out/
-regen.sh
-snowflake-*
+log.txt
