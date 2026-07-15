@@ -48,7 +48,7 @@
     qcom,chg-term-src = <1>;
     qcom,chg-term-current-ma = <(-200)>;
     qcom,thermal-mitigation = <3000000
-            2500000 2300000 2000000 1500000 800000 500000>;
+            2500000 2300000 2000000 1500000 800000 500000 100000 50000 0>;
     qcom,auto-recharge-soc = <99>;
     qcom,jeita-soft-hys-thresholds = <2 2>;
     dpdm-supply = <&qusb_phy0>;
@@ -56,6 +56,5 @@
 
 &pm6150_pdphy{
     qcom,default-sink-caps = <5000 3000>,
-                         <9000 3000>,
-                         <12000 3000>;
+                         <9000 3000>;
 };
