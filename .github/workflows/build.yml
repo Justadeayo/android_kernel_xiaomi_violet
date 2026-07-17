@@ -1,0 +1,109 @@
+name: Build Kernel 4.19 SDM675 (violet)
+
+on:
+  workflow_dispatch:
+    inputs:
+      defconfig:
+        description: 'Defconfig yang dipakai'
+        required: false
+        default: 'vendor/violet-perf_defconfig' # Updated for violet
+      lto_mode:
+        description: 'Mode LTO (thin/full/none)'
+        required: false
+        default: 'thin'
+        type: choice
+        options:
+          - thin
+          - full
+          - none
+      artifact_scope:
+        description: 'File yang diupload sebagai artifact'
+        required: false
+        default: 'ringkas'
+        type: choice
+        options:
+          - ringkas
+          - lengkap
+
+env:
+  KERNEL_DIR: ${{ github.workspace }}/kernel
+  TC_DIR: ${{ github.workspace }}/toolchain/aosp-clang
+  OUT_DIR: ${{ github.workspace }}/kernel/out
+  AOSP_CLANG_TAG: r547379
+  AOSP_CLANG_URL: https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+
+    steps:
+      - name: Checkout kernel source
+        uses: actions/checkout@v6
+        with:
+          path: kernel
+
+      - name: Setup swap tambahan
+        run: |
+          LTO_MODE="${{ github.event.inputs.lto_mode || 'thin' }}"
+          SWAP_SIZE="8G"
+          echo "Menambahkan swap ${SWAP_SIZE}..."
+          sudo fallocate -l "$SWAP_SIZE" /swapfile_ci
+          sudo chmod 600 /swapfile_ci
+          sudo mkswap /swapfile_ci
+          sudo swapon /swapfile_ci
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bc bison flex libssl-dev libelf-dev build-essential zip curl git python3 python-is-python3 ccache llvm lld gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi
+
+      - name: Cache AOSP Clang toolchain
+        id: cache-toolchain
+        uses: actions/cache@v5
+        with:
+          path: ${{ env.TC_DIR }}
+          key: aosp-clang-${{ env.AOSP_CLANG_TAG }}
+
+      - name: Download AOSP Clang toolchain
+        if: steps.cache-toolchain.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p "$TC_DIR"
+          curl -L --fail "${AOSP_CLANG_URL}/+archive/refs/heads/main/clang-${AOSP_CLANG_TAG}.tar.gz" -o /tmp/clang.tar.gz
+          tar -xzf /tmp/clang.tar.gz -C "$TC_DIR"
+
+      - name: Setup toolchain PATH
+        run: echo "$TC_DIR/bin" >> "$GITHUB_PATH"
+
+      - name: Build kernel
+        id: build
+        run: |
+          cd "$KERNEL_DIR"
+          mkdir -p "$OUT_DIR"
+          DEFCONFIG="${{ github.event.inputs.defconfig || 'vendor/violet-perf_defconfig' }}"
+          
+          TOOLCHAIN_ARGS=(
+            ARCH=arm64
+            CC="clang"
+            HOSTCC="clang"
+            LLVM=1
+            LLVM_IAS=1
+            KBUILD_BUILD_USER=Justus
+            KBUILD_BUILD_HOST=KernelCI
+            CLANG_TRIPLE=aarch64-linux-gnu-
+            CROSS_COMPILE=aarch64-linux-gnu-
+            CROSS_COMPILE_ARM32=arm-linux-gnueabi-
+          )
+
+          make O="$OUT_DIR" "${TOOLCHAIN_ARGS[@]}" "$DEFCONFIG"
+          make -j"$(nproc --all)" O="$OUT_DIR" "${TOOLCHAIN_ARGS[@]}"
+          
+          echo "defconfig=${DEFCONFIG}" >> "$GITHUB_OUTPUT"
+          echo "lto_mode=${{ github.event.inputs.lto_mode }}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload kernel image
+        uses: actions/upload-artifact@v7
+        with:
+          name: kernel-violet-${{ github.run_id }}
+          path: ${{ env.OUT_DIR }}/arch/arm64/boot/Image.gz
+          
