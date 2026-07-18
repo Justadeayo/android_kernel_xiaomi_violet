@@ -133,6 +133,6 @@ Android.bp
 # Ignore build stuff
 AnyKernel3/
 build.sh
-clang/
+neutron-clang/
 out/
 log.txt
