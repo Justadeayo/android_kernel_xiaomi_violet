@@ -164,7 +164,7 @@ unsigned long sysctl_clean_min_kbytes __read_mostly;
 /*
  * From 0 .. 100.  Higher means more swappy.
  */
-int vm_swappiness = 80;
+int vm_swappiness = 85;
 /*
  * The total number of pages which are beyond the high watermark within all
  * zones.
