@@ -57,6 +57,14 @@ scm_version()
 				echo "+"
 				return
 			fi
+
+		# Get commit sha, leave.
+		if test "$CONFIG_LOCALVERSION_SHA" = "y"; then
+			last_commit=$(git rev-parse --verify --short=8 HEAD)
+			printf '%s' "/$last_commit"
+			return
+		fi
+		
 			# If we are past a tagged commit (like
 			# "v2.6.30-rc5-302-g72357d5"), we pretty print it.
 			#
