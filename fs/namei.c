@@ -3870,7 +3870,7 @@ out2:
 		}
  #endif // #ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
  		audit_inode(nd->name, path.dentry, 0);
- 		error = vfs_open(&path, file, current_cred());
+ 		error = vfs_open(&path, file);
  		path_put(&path);
  	}
  #ifdef CONFIG_KSU_SUSFS_OPEN_REDIRECT
