@@ -38,6 +38,33 @@
 #include <trace/events/thermal.h>
 
 #define USE_LMH_DEV	0
+
+/*
+ * SilkXotic: bound on how hard userspace thermal may clamp a cpufreq cooling device.
+ *
+ * On sweet the kernel's own step_wise trips sit at 110-120 C and never fire during gameplay
+ * (measured 2026-09-04 at 62-67 C under sustained 3D load). The clamp comes entirely from
+ * userspace -- mi_thermald / thermal-engine / android.hardware.thermal-service.qti writing
+ * cooling_deviceN/cur_state. The gold cluster converges on state 6 of 14, i.e. 1555200 kHz
+ * of a rated 2304000 kHz, while the die sits at ~65 C with ~30 C of real headroom. That is a
+ * skin-comfort policy rather than a silicon limit.
+ *
+ * cpufreq_set_cur_state() is the single funnel every such request passes through. State N
+ * selects freq_table[N], which __cpufreq_cooling_register() fills in DESCENDING frequency
+ * order, so a larger state is a lower clock. Verified on-device against the gold cluster's
+ * 14-entry table: state 3 -> 1939200, state 6 -> 1555200, state 7 -> 1324800, each matching
+ * the observed scaling_max_freq exactly. A bound applied here cannot be routed around from
+ * userspace, because there is no second path to the clamp.
+ *
+ * NOTE this deliberately trades battery for sustained clocks: the v1.1 battery A/B measured
+ * +37% charge for +4% work when the kernel declined to step down under sustained load. It is
+ * an experiment to be A/B'd with benchmark/benchgame.sh, not a free win. Default off.
+ */
+static int cpufreq_cooling_max_state = CONFIG_CPU_COOLING_MAX_STATE_BOUND;
+module_param(cpufreq_cooling_max_state, int, 0644);
+MODULE_PARM_DESC(cpufreq_cooling_max_state,
+	"Highest cooling state userspace may drive a cpufreq cooling device to (0 = unbounded)");
+
 /*
  * Cooling state <-> CPUFreq frequency
  *
@@ -699,6 +726,18 @@ static int cpufreq_set_cur_state(struct thermal_cooling_device *cdev,
 	/* Request state should be less than max_level */
 	if (WARN_ON(state > cpufreq_cdev->max_level))
 		state = cpufreq_cdev->max_level;
+
+	/*
+	 * SilkXotic: bound the userspace-requested clamp. Applied *before* the equality
+	 * check below, so a repeated over-bound request short-circuits there instead of
+	 * re-clipping on every thermal poll. max_level is the isolation level (freq_table
+	 * entry 0 -- see __cpufreq_cooling_register), so any bound below it also means the
+	 * isolation path further down (sched_isolate_cpu) can no longer be reached on a
+	 * bounded device: we never lose a whole core to thermal.
+	 */
+	if (cpufreq_cooling_max_state > 0 &&
+	    state > (unsigned long)cpufreq_cooling_max_state)
+		state = (unsigned long)cpufreq_cooling_max_state;
 
 	/* Check if the old cooling action is same as new cooling action */
 	if (cpufreq_cdev->cpufreq_state == state)

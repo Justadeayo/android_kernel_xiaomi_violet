@@ -164,6 +164,29 @@ config CPU_THERMAL
 
 	  If you want this support, you should say Y here.
 
+config CPU_COOLING_MAX_STATE_BOUND
+	int "SilkXotic: default bound on userspace cpufreq cooling state"
+	depends on CPU_THERMAL
+	range 0 32
+	default 0
+	help
+	  Compiled-in default for the highest cooling state that userspace thermal
+	  daemons may drive a cpufreq cooling device to. Higher cooling states mean
+	  deeper frequency clamping, so a LOWER bound means LESS throttling.
+
+	  0 (the default) disables the bound entirely and preserves stock behaviour.
+
+	  On sweet the gold cluster's cooling device has 14 states and userspace
+	  settles on state 6 (1555200 kHz of 2304000) at only ~65 C die temperature.
+	  A bound of 3 would cap the clamp at 1939200 kHz instead.
+
+	  This trades battery life and skin temperature for sustained clocks. Prefer
+	  leaving this at 0 and tuning at runtime through
+	  /sys/module/thermal_sys/parameters/cpufreq_cooling_max_state, so a single
+	  build can A/B both sides.
+
+	  If unsure, say 0.
+
 config CLOCK_THERMAL
 	bool "Generic clock cooling support"
 	depends on COMMON_CLK
