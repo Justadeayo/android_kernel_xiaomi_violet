@@ -123,7 +123,7 @@ SCHED_FEAT(ENERGY_AWARE, false)
  *   OFF: Use whichever of target or backup saves most.
  */
 SCHED_FEAT(EAS_PREFER_IDLE, true)
-SCHED_FEAT(FIND_BEST_TARGET, true)
+SCHED_FEAT(FIND_BEST_TARGET, false)
 SCHED_FEAT(FBT_STRICT_ORDER, false)
 
 /*
