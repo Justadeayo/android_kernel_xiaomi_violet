@@ -364,6 +364,7 @@ static enum power_supply_property smb2_usb_props[] = {
 	POWER_SUPPLY_PROP_CURRENT_MAX,
 	POWER_SUPPLY_PROP_TYPE,
 	POWER_SUPPLY_PROP_TYPEC_MODE,
+	POWER_SUPPLY_PROP_CHARGING_ENABLED,
 	POWER_SUPPLY_PROP_TYPEC_POWER_ROLE,
 	POWER_SUPPLY_PROP_TYPEC_CC_ORIENTATION,
 	POWER_SUPPLY_PROP_TYPEC_SRC_RP,
@@ -1069,6 +1070,9 @@ static int smb2_batt_get_prop(struct power_supply *psy,
 		if (pval.intval)
 			rc = smblib_get_prop_charger_temp(chg, val);
 		break;
+	case POWER_SUPPLY_PROP_CHARGING_ENABLED:
+		val->intval = !get_effective_result(chg->chg_disable_votable);
+		break;
 	case POWER_SUPPLY_PROP_CHARGER_TEMP_MAX:
 		rc = smblib_get_prop_charger_temp_max(chg, val);
 		break;
@@ -1226,6 +1230,9 @@ static int smb2_batt_set_prop(struct power_supply *psy,
 		else
 			vote(chg->fcc_votable, FG_ESR_VOTER, false, 0);
 		break;
+	case POWER_SUPPLY_PROP_CHARGING_ENABLED:
+		vote(chg->chg_disable_votable, USER_VOTER, !!!val->intval, 0);
+		break;
 	case POWER_SUPPLY_PROP_SET_SHIP_MODE:
 		/* Not in ship mode as long as the device is active */
 		if (!val->intval)
@@ -1261,6 +1268,7 @@ static int smb2_batt_prop_is_writeable(struct power_supply *psy,
 	switch (psp) {
 	case POWER_SUPPLY_PROP_STATUS:
 	case POWER_SUPPLY_PROP_INPUT_SUSPEND:
+	case POWER_SUPPLY_PROP_CHARGING_ENABLED:
 	case POWER_SUPPLY_PROP_SYSTEM_TEMP_LEVEL:
 	case POWER_SUPPLY_PROP_CAPACITY:
 	case POWER_SUPPLY_PROP_PARALLEL_DISABLE:
