@@ -52,9 +52,12 @@
     qcom,auto-recharge-soc = <95>;
     qcom,jeita-soft-hys-thresholds = <2 2>;
     dpdm-supply = <&qusb_phy0>;
+    qcom,fastchg-current-ma = <3000>;
+    qcom,usb-icl-ua = <3000000>;
 };
 
 &pm6150_pdphy{
     qcom,default-sink-caps = <5000 3000>,
-                         <9000 3000>;
+                             <9000 3000>,
+                             <12000 2500>;
 };
