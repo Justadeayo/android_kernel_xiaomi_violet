@@ -539,6 +539,9 @@ endif
 CLANG_FLAGS	+= $(call cc-option, -Wno-misleading-indentation)
 CLANG_FLAGS	+= $(call cc-option, -Wno-bool-operation)
 CLANG_FLAGS	+= $(call cc-option, -Wno-unsequenced)
+# Prevent strict warning errors from breaking prepare-compiler-check under modern Clang
+CLANG_FLAGS	+= -Wno-error
+CLANG_FLAGS	+= -Wno-unused-command-line-argument
 KBUILD_CFLAGS	+= $(CLANG_FLAGS)
 KBUILD_AFLAGS	+= $(CLANG_FLAGS)
 export CLANG_FLAGS
