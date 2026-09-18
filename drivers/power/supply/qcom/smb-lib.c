@@ -4106,17 +4106,21 @@ irqreturn_t smblib_handle_usb_source_change(int irq, void *data)
 	}
 	smblib_dbg(chg, PR_REGISTER, "APSD_STATUS = 0x%02x\n", stat);
 
-	if ((chg->connector_type == POWER_SUPPLY_CONNECTOR_MICRO_USB)
-			&& (stat & APSD_DTC_STATUS_DONE_BIT)
-			&& !chg->uusb_apsd_rerun_done) {
-		/*
-		 * Force re-run APSD to handle slow insertion related
-		 * charger-mis-detection.
-		 */
-		chg->uusb_apsd_rerun_done = true;
-		smblib_rerun_apsd(chg);
-		return IRQ_HANDLED;
-	}
+	if ((stat & APSD_DTC_STATUS_DONE_BIT)
+			&& !chg->uusb_apsd_rerun_done
+			&& !chg->pd_active) {
+ 		/*
+ 		 * Force re-run APSD to handle slow insertion related
+ 		 * charger-mis-detection.
+		 * Extended to Type-C: guarded by !pd_active so a
+		 * successfully negotiated PD session is never
+		 * disrupted — this only fires for the stuck-at-legacy-
+		 * detection case PD never took over from.
+ 		 */
+ 		chg->uusb_apsd_rerun_done = true;
+ 		smblib_rerun_apsd(chg);
+ 		return IRQ_HANDLED;
+ 	}
 
 	smblib_handle_apsd_done(chg,
 		(bool)(stat & APSD_DTC_STATUS_DONE_BIT));
