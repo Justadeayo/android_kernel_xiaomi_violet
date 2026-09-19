@@ -1345,14 +1345,14 @@ ifdef CONFIG_LTO_CLANG
 endif
 # Make sure compiler supports LTO flags
 ifdef lto-flags
-  ifeq ($(call cc-option, $(lto-flags)),)
+  ifeq ($(call cc-option, $(lto-flags) -Wno-error -Wno-unused-command-line-argument),)
 	@echo Cannot use CONFIG_LTO: $(lto-flags) not supported by compiler \
 		>&2 && exit 1
   endif
 endif
 # Make sure compiler supports requested stack protector flag.
 ifdef stackp-name
-  ifeq ($(call cc-option, $(stackp-flag)),)
+  ifeq ($(call cc-option, $(stackp-flag) -Wno-error -Wno-unused-command-line-argument),)
 	@echo Cannot use CONFIG_CC_STACKPROTECTOR_$(stackp-name): \
 		  $(stackp-flag) not supported by compiler >&2 && exit 1
   endif
@@ -1365,7 +1365,7 @@ ifdef stackp-check
   endif
 endif
 ifdef cfi-flags
-  ifeq ($(call cc-option, $(cfi-flags)),)
+  ifeq ($(call cc-option, $(cfi-flags) -Wno-error -Wno-unused-command-line-argument),)
 	@echo Cannot use CONFIG_CFI: $(cfi-flags) not supported by compiler >&2 && exit 1
   endif
 endif
