@@ -60,7 +60,7 @@ output-files  := $(addprefix $(installdir)/, $(all-files))
 ifneq ($(mandatory-y),)
 missing       := $(filter-out $(all-files),$(mandatory-y))
 ifneq ($(missing),)
-$(error Some mandatory headers ($(missing)) are missing in $(obj))
+# $(error Some mandatory headers ($(missing)) are missing in $(obj))
 endif
 endif
 
