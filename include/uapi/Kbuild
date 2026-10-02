@@ -1,0 +1,13 @@
+# include/uapi/Kbuild
+
+header-y += asm-generic/
+header-y += drm/
+header-y += linux/
+header-y += media/
+header-y += misc/
+header-y += mtd/
+header-y += rdma/
+header-y += scsi/
+header-y += sound/
+header-y += video/
+header-y += xen/
