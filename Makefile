@@ -369,8 +369,8 @@ HOST_LFS_LDFLAGS := $(shell getconf LFS_LDFLAGS 2>/dev/null)
 HOST_LFS_LIBS := $(shell getconf LFS_LIBS 2>/dev/null)
 
 
-HOSTCC	= gcc
-HOSTCXX	= g++
+HOSTCC	= $(or $(wildcard /usr/bin/gcc),gcc)
+HOSTCXX	= $(or $(wildcard /usr/bin/g++),g++)
 
 
 HOSTCFLAGS   := -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 \
