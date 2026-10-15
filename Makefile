@@ -368,13 +368,14 @@ HOST_LFS_CFLAGS := $(shell getconf LFS_CFLAGS 2>/dev/null)
 HOST_LFS_LDFLAGS := $(shell getconf LFS_LDFLAGS 2>/dev/null)
 HOST_LFS_LIBS := $(shell getconf LFS_LIBS 2>/dev/null)
 
-ifneq ($(LLVM),)
-HOSTCC	= clang
-HOSTCXX	= clang++
+ifneq ($(findstring compiler-rt,$(HOSTLDFLAGS)),)
+HOSTCC	= $(or $(lastword $(sort $(wildcard $(srctree)/../../../prebuilts/clang/host/linux-x86/clang-r*/bin/clang))),clang)
+HOSTCXX	= $(or $(lastword $(sort $(wildcard $(srctree)/../../../prebuilts/clang/host/linux-x86/clang-r*/bin/clang++))),clang++)
 else
-HOSTCC	= gcc
-HOSTCXX	= g++
+HOSTCC	= $(or $(wildcard /usr/bin/gcc),gcc)
+HOSTCXX	= $(or $(wildcard /usr/bin/g++),g++)
 endif
+
 HOSTCFLAGS   := -Wall -Wmissing-prototypes -Wstrict-prototypes -O3 \
 		-fomit-frame-pointer -std=gnu89 -pipe $(HOST_LFS_CFLAGS)
 HOSTCXXFLAGS := -O3 $(HOST_LFS_CFLAGS)
