@@ -850,7 +850,7 @@ endif
 endif
 # Initialize all stack variables with a 0xAA pattern.
 ifdef CONFIG_INIT_STACK_ALL_PATTERN
-KBUILD_CFLAGS	+= -ftrivial-auto-var-init=pattern
+KBUILD_CFLAGS   += $(call cc-option,-ftrivial-auto-var-init=pattern)
 endif
 
 # Initialize all stack variables with a zero value.
