@@ -5266,7 +5266,7 @@ static int ufshcd_link_recovery(struct ufs_hba *hba)
 	hba->ufshcd_state = UFSHCD_STATE_ERROR;
 	hba->force_host_reset = true;
 	ufshcd_set_eh_in_progress(hba);
-	schedule_work(&hba->eh_work);
+	queue_work(hba->eh_wq, &hba->eh_work);
 
 	/* wait for the reset work to finish */
 	do {
@@ -6399,7 +6399,7 @@ static irqreturn_t ufshcd_uic_cmd_compl(struct ufs_hba *hba, u32 intr_status)
 			 * to printout the debug messages.
 			 */
 			hba->auto_h8_err = true;
-			schedule_work(&hba->eh_work);
+			queue_work(hba->eh_wq, &hba->eh_work);
 			retval = IRQ_HANDLED;
 		}
 	}
@@ -7412,7 +7412,7 @@ static irqreturn_t ufshcd_check_errors(struct ufs_hba *hba)
 			ufshcd_set_eh_in_progress(hba);
 
 			hba->ufshcd_state = UFSHCD_STATE_EH_SCHEDULED;
-			schedule_work(&hba->eh_work);
+			queue_work(hba->eh_wq, &hba->eh_work);
 		}
 		retval |= IRQ_HANDLED;
 	}
@@ -8028,7 +8028,7 @@ static int ufshcd_eh_host_reset_handler(struct scsi_cmnd *cmd)
 	 */
 	hba->ufshcd_state = UFSHCD_STATE_ERROR;
 	hba->force_host_reset = true;
-	schedule_work(&hba->eh_work);
+	queue_work(hba->eh_wq, &hba->eh_work);
 
 	/* wait for the reset work to finish */
 	do {
@@ -11046,6 +11046,7 @@ void ufshcd_remove(struct ufs_hba *hba)
 	}
 
 	ufshcd_hba_exit(hba);
+	destroy_workqueue(hba->eh_wq);
 	ufsdbg_remove_debugfs(hba);
 }
 EXPORT_SYMBOL_GPL(ufshcd_remove);
@@ -11204,6 +11205,21 @@ int ufshcd_init(struct ufs_hba *hba, void __iomem *mmio_base, unsigned int irq)
 	init_waitqueue_head(&hba->tm_wq);
 	init_waitqueue_head(&hba->tm_tag_wq);
 
+	/*
+	 * The error handler must run on a WQ_MEM_RECLAIM queue: the SCSI
+	 * error handler flushes eh_work from scsi_tmf (itself a reclaim
+	 * worker), and flushing a !WQ_MEM_RECLAIM work item from reclaim
+	 * context deadlocks when reclaim needs the I/O we are recovering.
+	 */
+	hba->eh_wq = alloc_ordered_workqueue("ufs_eh_wq_%d",
+				WQ_MEM_RECLAIM | WQ_HIGHPRI, hba->host->host_no);
+	if (!hba->eh_wq) {
+		dev_err(hba->dev, "%s: failed to create eh workqueue\n",
+			__func__);
+		err = -ENOMEM;
+		goto out_disable;
+	}
+
 	/* Initialize work queues */
 	INIT_WORK(&hba->eh_work, ufshcd_err_handler);
 	INIT_WORK(&hba->eeh_work, ufshcd_exception_event_handler);
@@ -11337,6 +11353,7 @@ int ufshcd_init(struct ufs_hba *hba, void __iomem *mmio_base, unsigned int irq)
 out_remove_scsi_host:
 	scsi_remove_host(hba->host);
 exit_gating:
+	destroy_workqueue(hba->eh_wq);
 	ufshcd_exit_clk_gating(hba);
 	ufshcd_exit_latency_hist(hba);
 out_disable:

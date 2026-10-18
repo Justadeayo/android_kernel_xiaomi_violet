@@ -1552,7 +1552,7 @@ static ssize_t ufsdbg_reset_controller_write(struct file *filp,
 	 */
 	hba->saved_err |= INT_FATAL_ERRORS;
 	hba->silence_err_logs = true;
-	schedule_work(&hba->eh_work);
+	queue_work(hba->eh_wq, &hba->eh_work);
 	spin_unlock_irqrestore(hba->host->host_lock, flags);
 
 	flush_work(&hba->eh_work);
