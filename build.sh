@@ -2,6 +2,7 @@
 # Written by: cyberknight777
 # YAKB v2.0
 # Copyright (c) 2022-2023 Cyber Knight <cyberknight755@gmail.com>
+# Edited by: Justus <justadeayo@gmail.com> © 2026
 #
 #			GNU GENERAL PUBLIC LICENSE
 #			 Version 3, 29 June 2007
@@ -49,17 +50,17 @@ tg_post_sticker() {
     -d sticker="CAACAgUAAxkBAAECHIJgXlYR8K8bYvyYIpHaFTJXYULy4QACtgIAAs328FYI4H9L7GpWgR4E"
 }
 
-# Build Configurations & Variables
+
+export TZ="Africa/Lagos"
 export CONFIG=vendor/xcalibur-perf_defconfig
 KDIR=$(pwd)
 export KDIR
 export LINKER="ld"
 export DEVICE="Redmi Note 7 Pro"
-DATE=$(date +"%Y-%m-%d")
+DATE=$(date +"%Y-%m-%d %H:%M WAT")
 export DATE
 export CODENAME="Violet"
-export BUILDER="Joker-V2"
-export REPO_URL="https://github.com/AxionAOSP-devices/android_kernel_xiaomi_violet"
+export REPO_URL="https://github.com/Justadeayo/android_kernel_xiaomi_violet"
 COMMIT_HASH=$(git rev-parse --short HEAD)
 export COMMIT_HASH
 PROCS=$(nproc --all)
@@ -67,13 +68,13 @@ export PROCS
 export ARCH=arm64
 
 OUT_DIR="${KDIR}/out"
-kernel_name="Xcalibur-v6.0-violet"
-support="Android 14.0-16.0"
+kernel_name="Xcalibur-XF-v6.0-violet"
+support="Android 14.0-17.0"
 variant="Retrofit Dynamic"
 cores=$(nproc --all)
 
 os_info=$(grep -oP 'PRETTY_NAME="\K[^"]+' /etc/os-release 2>/dev/null || cat /etc/issue | head -n 1 | tr -d '\\\r')
-build_time_str=$(TZ="Asia/Kolkata" date "+%a %b %d %r")
+build_time_str=$(date "+%a %b %d %r %Z")
 commit_head=$(git log --oneline -1 2>/dev/null | tr -d '\\\r' || echo "Unknown commit")
 
 zipn="${kernel_name}-$(date '+%Y%m%d-%H%M').zip"
@@ -96,28 +97,21 @@ MAKE+=(
 )
 
 if [ ! -d "${KDIR}/AnyKernel3/" ]; then
-	git clone -b sixteen https://github.com/Joker-V2/AnyKernel3
+	git clone -b master https://github.com/Justadeayo/AnyKernel3
 fi
-
-export KBUILD_BUILD_USER="Joker-V2"
-export KBUILD_BUILD_HOST="Xcalibur-Ci"
-
-# A function to inject build date into anykernel.sh
-patch_anykernel() {
-    sed -i "s/##   Build    :  .*                 ##/##   Build    :  ${DATE}                 ##/" \
-        "${KDIR}/AnyKernel3/anykernel.sh"
-    echo -e "\n\e[1;32m[✓] Build date injected: ${DATE}\e[0m"
-}
 
 # A function to build AnyKernel3 zip, sign it with AOSP keys, upload it, and notify Telegram.
 mkzip() {
 	echo -e "\n\e[1;93m[*] Building zip! \e[0m"
 	mkdir -p "${KDIR}"/AnyKernel3/dtbs
-	if [ -f "${OUT_DIR}/arch/arm64/boot/Image.gz" ]; then
+	# Prefer Image.gz-dtb: it has the DTBs appended. Plain Image.gz has none,
+	# so AnyKernel3 would keep the phone's stock DTB and DT changes would never apply.
+	if [ -f "${OUT_DIR}/arch/arm64/boot/Image.gz-dtb" ]; then
+		mv "${OUT_DIR}/arch/arm64/boot/Image.gz-dtb" "${KDIR}"/AnyKernel3 || { tg_post_msg "<code>Failed to move Image.gz-dtb! ❎</code>"; exit 1; }
+	elif [ -f "${OUT_DIR}/arch/arm64/boot/Image.gz" ]; then
 		mv "${OUT_DIR}/arch/arm64/boot/Image.gz" "${KDIR}"/AnyKernel3 || { tg_post_msg "<code>Failed to move Image.gz! ❎</code>"; exit 1; }
 	fi
 	[ -f "${OUT_DIR}/arch/arm64/boot/dtbo.img" ] && mv "${OUT_DIR}/arch/arm64/boot/dtbo.img" "${KDIR}"/AnyKernel3
-	patch_anykernel
 
 	cd "${KDIR}"/AnyKernel3 || exit 1
 	zip -r9 "$zipn" . -x ".git*" -x "README.md" -x "LICENSE" -x "*.zip" || exit 1
