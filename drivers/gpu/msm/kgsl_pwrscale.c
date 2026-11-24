@@ -810,8 +810,20 @@ int kgsl_busmon_target(struct device *dev, unsigned long *freq, u32 flags)
 
 int kgsl_busmon_get_cur_freq(struct device *dev, unsigned long *freq)
 {
+	struct kgsl_device *device = dev_get_drvdata(dev);
+
+	if (device == NULL)
+		return -ENODEV;
+	if (freq == NULL)
+		return -EINVAL;
+
+	mutex_lock(&device->mutex);
+	*freq = kgsl_pwrctrl_active_freq(&device->pwrctrl);
+	mutex_unlock(&device->mutex);
+
 	return 0;
 }
+EXPORT_SYMBOL(kgsl_busmon_get_cur_freq);
 
 /*
  * opp_notify - Callback function registered to receive OPP events.
