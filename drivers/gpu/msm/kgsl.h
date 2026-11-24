@@ -240,6 +240,8 @@ struct kgsl_memdesc {
 	 * multiple entities trying to map the same SVM region at once
 	 */
 	spinlock_t lock;
+	/* @map_lock: Mutex to protect hostptr mapping refcount */
+	struct mutex map_lock;
 };
 
 /*
