@@ -1815,6 +1815,7 @@ static void process_cmdobj_fault(struct kgsl_device *device,
 			drawobj->context->fault_time = jiffies;
 			drawobj->context->fault_count = 1;
 		} else {
+			drawobj->context->fault_time = jiffies;
 			drawobj->context->fault_count++;
 			if (drawobj->context->fault_count >
 					_fault_throttle_burst) {
