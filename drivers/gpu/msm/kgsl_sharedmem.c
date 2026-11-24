@@ -708,7 +708,6 @@ static int kgsl_do_cache_op(struct page *page, void *addr,
 		uint64_t offset, uint64_t size, unsigned int op)
 {
 	if (page != NULL) {
-		unsigned long pfn = page_to_pfn(page) + offset / PAGE_SIZE;
 		/*
 		 *  page_address() returns the kernel virtual address of page.
 		 *  For high memory kernel virtual address exists only if page
@@ -716,22 +715,20 @@ static int kgsl_do_cache_op(struct page *page, void *addr,
 		 *  page_address() for high memory.
 		 */
 		if (PageHighMem(page)) {
-			offset &= ~PAGE_MASK;
+			unsigned long pg_idx = offset >> PAGE_SHIFT;
+			unsigned long pg_off = offset & ~PAGE_MASK;
 
 			do {
-				unsigned int len = size;
+				unsigned int len = min_t(uint64_t, size,
+							PAGE_SIZE - pg_off);
 
-				if (len + offset > PAGE_SIZE)
-					len = PAGE_SIZE - offset;
-
-				page = pfn_to_page(pfn++);
-				addr = kmap_atomic(page);
-				_cache_op(op, addr + offset,
-						addr + offset + len);
+				addr = kmap_atomic(nth_page(page, pg_idx++));
+				_cache_op(op, addr + pg_off,
+						addr + pg_off + len);
 				kunmap_atomic(addr);
 
 				size -= len;
-				offset = 0;
+				pg_off = 0;
 			} while (size);
 
 			return 0;
