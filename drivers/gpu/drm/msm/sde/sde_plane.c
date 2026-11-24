@@ -3672,6 +3672,13 @@ static int sde_plane_sspp_atomic_check(struct drm_plane *plane,
 	if (!sde_plane_enabled(state))
 		goto modeset_update;
 
+	/* A transient zero-sized layer has nothing to scan out. Accept the
+	 * commit but treat the plane as disabled below instead of rejecting
+	 * the whole atomic commit with -E2BIG.
+	 */
+	if (!src.w || !src.h)
+		goto modeset_update;
+
 	SDE_DEBUG(
 		"plane%d.%u sspp:%x/%dx%d/%4.4s/%llx/%dx%d+%d+%d crtc:%dx%d+%d+%d\n",
 			plane->base.id, rstate->sequence_id,
@@ -4315,6 +4322,7 @@ static void sde_plane_atomic_update(struct drm_plane *plane,
 {
 	struct sde_plane *psde;
 	struct drm_plane_state *state;
+	struct sde_plane_state *pstate;
 
 	if (!plane) {
 		SDE_ERROR("invalid plane\n");
@@ -4327,12 +4335,14 @@ static void sde_plane_atomic_update(struct drm_plane *plane,
 	psde = to_sde_plane(plane);
 	psde->is_error = false;
 	state = plane->state;
+	pstate = to_sde_plane_state(state);
 
 	SDE_DEBUG_PLANE(psde, "\n");
 
 	sde_plane_rot_atomic_update(plane, old_state);
 
-	if (!sde_plane_sspp_enabled(state)) {
+	if (!sde_plane_sspp_enabled(state) ||
+			!pstate->rot.out_src_w || !pstate->rot.out_src_h) {
 		_sde_plane_atomic_disable(plane, old_state);
 	} else {
 		int ret;
