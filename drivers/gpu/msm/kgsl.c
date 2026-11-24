@@ -288,7 +288,7 @@ kgsl_mem_entry_create(void)
 
 static void add_dmabuf_list(struct kgsl_dma_buf_meta *meta)
 {
-	struct dmabuf_list_entry *dle;
+	struct dmabuf_list_entry *dle, *prealloc;
 	struct page *page;
 
 	/*
@@ -297,6 +297,9 @@ static void add_dmabuf_list(struct kgsl_dma_buf_meta *meta)
 	 * mem entries.
 	 */
 	page = sg_page(meta->table->sgl);
+
+	/* Pre-allocate before taking the lock to avoid GFP_ATOMIC */
+	prealloc = kzalloc(sizeof(*prealloc), GFP_KERNEL);
 
 	spin_lock(&kgsl_dmabuf_lock);
 
@@ -307,12 +310,13 @@ static void add_dmabuf_list(struct kgsl_dma_buf_meta *meta)
 			meta->dle = dle;
 			list_add(&meta->node, &dle->dmabuf_list);
 			spin_unlock(&kgsl_dmabuf_lock);
+			kfree(prealloc);
 			return;
 		}
 	}
 
 	/* This is a new buffer. Add a new entry for it */
-	dle = kzalloc(sizeof(*dle), GFP_ATOMIC);
+	dle = prealloc;
 	if (dle) {
 		dle->firstpage = page;
 		INIT_LIST_HEAD(&dle->dmabuf_list);
